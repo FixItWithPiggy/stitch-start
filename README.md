@@ -1,56 +1,45 @@
-# Welcome to your Expo app 👋
+# Stitch Start
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Tell it your machine and your design. It tells you how to set up: fabric, needle, thread, stabilizer, tension, stitch length and sizing, using only the settings your machine actually has. Includes step-by-step threading, bobbin and needle guides for each machine, a tension guide, and "Ask Claude" for a personal review of your design picture and notes.
 
-## Get started
+One codebase builds the **website**, the **iPhone app** and the **Android app** (Expo + React Native). To put it online, follow **[LAUNCH-GUIDE.md](LAUNCH-GUIDE.md)**.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it on your computer
 
 ```bash
-npm run reset-project
+npm install
+npm run web        # opens the website version
+npm start          # scan the QR code with the Expo Go app to try it on your phone
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Without a `.env` file the app runs in demo mode (no accounts, saved on the device, Ask Claude off). To connect it to Supabase, copy `.env.example` to `.env` and fill in the two values.
 
-### Other setup steps
+## Checks
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npm test           # recommendation engine and machine library tests
+npm run typecheck  # TypeScript
+npm run lint
+npm run build:web  # builds the website into dist/
+```
 
-## Learn more
+## How the code is organized
 
-To learn more about developing your project with Expo, look at the following resources:
+| Folder | What's in it |
+|---|---|
+| `src/core/` | Machine library (`machines.ts`), recommendation rules (`engine.ts`), shared types. No app code, so the server uses the same files. |
+| `src/app/` | The screens. Each file is a page (Expo Router). |
+| `src/ui/` | Building blocks: buttons, cards, the setup card, threading guides, hoop and tension drawings. |
+| `src/lib/` | Sign-in (`auth.tsx`), Supabase connection, and saving/loading (`store.ts`). |
+| `supabase/migrations/` | Database tables and privacy rules. |
+| `supabase/functions/` | Server code: `advise` (calls the Claude API) and `delete-account`. `_shared/` is copied from `src/core` by `npm run sync-core`. |
+| `tests/` | Engine tests. |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+After editing anything in `src/core/`, run `npm run sync-core` (or `npm test`, which does it for you) so the server gets the same rules.
 
-## Join the community
+## Security notes
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- The Claude API key lives only in Supabase secrets, never in the app.
+- The app sends only a project id to the `advise` function. The server loads the project for the signed-in owner and builds the prompt itself, so the endpoint can't be used as a general Claude proxy.
+- Each person can ask Claude a limited number of times per day (`DAILY_ADVICE_LIMIT`, default 20).
+- Row Level Security on every table and on the `designs` storage bucket means people can only reach their own data.
